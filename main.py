@@ -1,39 +1,73 @@
+from pypdf import PdfReader
+from pathlib import Path
 from PIL import Image
 import pytesseract
-from pdf2image import convert_from_path
-from pathlib import Path
 import os
 
-def pdf_convert(input_dir):
-    """This function takes all the PDF files in a directory and converts their pages into JPEG files that are stored
-    into an automatically created directory with the same name as the initial file
+
+def pdf_extract(pdf_path):
+    """ This function extracts the text from a PDF file and returns the content in a dictionary
+    with the file name and the extracted text.
 
     Args:
-        input_dir(str): Path to the directory containing PDF files"""
+        pdf_path(str): Path to the PDF file that is to be converted"""
+    try:
+        content = PdfReader(pdf_path)
+        text = ""
+        for page in content.pages:
+            text += page.extract_text() + "\n"
 
-    for filename in os.listdir(input_dir):
-        if filename.endswith(".pdf"):
-            pdf_path = os.path.join(input_dir, filename)
+        name = Path(pdf_path).name
 
-            name = Path(pdf_path).name
+        print(f"Successfully extracted text from {name}!")
+        return {"document": {name}, "content": {text}}
 
-            output_dir = f"{input_dir}/{name[:-4]}"
-            if not os.path.exists(output_dir):
-                os.makedirs(output_dir)
+    except Exception as e:
+        print(f"Error extracting text from {name}: {e}")
 
-            try:
-                pages = convert_from_path(pdf_path)
-                for i in range(len(pages)):
-                    pages[i].save(f"{output_dir}/page"+str(i)+".jpg", "JPEG")
-                print(f"Succesfully converted {name} to {name[:-4]}.jpg.")
-                return pages
 
-            except Exception as e:
-                print(f"Error converting {pdf_path}: {e}")
+def image_extract(img_path):
+    """This function extracts the text from an image file (.jpeg, .png, .tiff, .gif, .bmp etc.) and
+    returns a dictionary containing the file name and the extracted text.
 
-def text_extract(pages):
+     Args:
+        img_path(str): Path to the PDF file that is to be converted."""
+
+    try:
+        image = Image.open(img_path)
+        text = pytesseract.image_to_string(image)
+
+        name = Path(img_path).name
+
+        print(f"Successfully extracted text from {name}!")
+        return {"document": {name}, "content": {text}}
+
+    except Exception as e:
+        print(f"Error extracting text from {name}: {e}")
+
+
+def excel_extract():
     pass
 
-def combine_text(pages):
+def text_file_extract():
     pass
+
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+for filename in current_dir:
+    if filename.endswith(".pdf"):
+        pdf_path = os.path.join(current_dir, filename)
+        pdf_extract(pdf_path)
+    elif filename.endswith(".jpg", ".png", ".tiff", ".bmp"):
+        image_extract()
+    elif filename.endswith(".docx", ".txt", ".pages"):
+        text_file_extract()
+    elif filename.endswith(".xls"):
+        excel_extract()
+    else:
+        print("Unfortunately this file format is not supported. Please try again with a PDF,"
+              " image (.jpg, .png, .giff etc), Excel or Word file.")
+
+
 
