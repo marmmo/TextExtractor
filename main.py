@@ -4,9 +4,12 @@ from PIL import Image
 import pytesseract
 import os
 from docx import Document
+from openpyxl import load_workbook
+import pandas as pd
 
 
-def pdf_extract(pdf_path):
+# This function could further be improved to support PDF files with multiple columns and different orientations
+def extract_pdf(pdf_path):
     """ This function extracts the text from a PDF file and returns the content in a string.
 
     Args:
@@ -26,7 +29,8 @@ def pdf_extract(pdf_path):
         print(f"Error extracting text from {name}: {e}")
 
 
-def image_extract(img_path):
+# This function could further be improved by pre-processing images in order for the text to be more accurately recognised
+def extract_image(img_path):
     """This function extracts the text from an image file (.jpeg, .png, .tiff, .gif, .bmp etc.) and
     returns the content in a string.
 
@@ -46,7 +50,7 @@ def image_extract(img_path):
         print(f"Error extracting text from {name}: {e}")
 
 
-def docx_extract(word_file_path):
+def extract_docx(word_file_path):
     """This function extracts the text from a Word file (.docx) and
        returns the content in a string.
 
@@ -69,7 +73,7 @@ def docx_extract(word_file_path):
         print(f"Error extracting text from {name}: {e}")
 
 
-def txt_extract(txt_file_path):
+def extract_txt(txt_file_path):
     """This function extracts the text from a text file (.txt) and
        returns the content in a string.
 
@@ -80,7 +84,7 @@ def txt_extract(txt_file_path):
 
     try:
         with open(txt_file_path, "r") as file:
-            text = file.read()
+            text = file.readlines()
 
             print(f"Successfully extracted text from {name}!")
             return text
@@ -89,8 +93,51 @@ def txt_extract(txt_file_path):
         print(f"Error extracting text from {name}: {e}")
 
 
-def excel_extract():
-    pass
+def extract_excel(excel_path):
+    """ This function extracts the text from an Excel file (.xlsx, .xlsm, .xltx, .xltm) and returns the content
+    as list of lists of strings. Each row is represented by a list of strings that contain the cell values.
+
+        Args:
+            pdf_path(str): Path to the PDF file that is to be converted"""
+
+    name = Path(excel_path).name
+
+    try:
+        workbook = load_workbook(excel_path)
+        sheets = workbook.sheetnames
+
+        data = []
+
+        for sheet in sheets:
+            current_sheet = workbook[sheet]
+            for row in current_sheet.iter_rows(values_only=True):
+                row_data = [str(cell) if cell is not None else " " for cell in row]
+                data.append(row_data)
+
+        return data
+
+    except Exception as e:
+        print(f"Error extracting text from {name}: {e}")
+
+
+def extract_csv(csv_path):
+
+    name = Path(csv_path).name
+
+    try:
+        db = pd.read_csv(csv_path)
+
+        data = []
+
+        for row in db.iterrows():
+            row_data = [str(cell) if cell is not None else " " for cell in row]
+            data.append(row_data)
+
+        return data
+
+    except Exception as e:
+        print(f"Error extracting text from {name}: {e}")
+
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -101,34 +148,44 @@ for filename in os.listdir(current_dir):
 
     if filename.endswith(".pdf"):
         pdf_path = os.path.join(current_dir, filename)
-        pdf_text = pdf_extract(pdf_path)
+        pdf_text = extract_pdf(pdf_path)
         if pdf_text:
             files_dict[filename] = pdf_text
 
-    elif filename.endswith(".jpg") or filename.endswith(".png") or filename.endswith(".tiff") or filename.endswith(
-            ".bmp"):
+    elif (filename.endswith(".jpg") or filename.endswith(".png") or filename.endswith(".tiff") or
+          filename.endswith(".bmp")):
         image_path = os.path.join(current_dir, filename)
-        image_text = image_extract(image_path)
+        image_text = extract_image(image_path)
         if image_text:
             files_dict[filename] = image_text
 
     elif filename.endswith(".txt"):
         txt_path = os.path.join(current_dir, filename)
-        txt_text = txt_extract(txt_path)
+        txt_text = extract_txt(txt_path)
         if txt_text:
             files_dict[filename] = txt_text
 
     elif filename.endswith(".docx"):
         docx_path = os.path.join(current_dir, filename)
-        docx_text = docx_extract(docx_path)
+        docx_text = extract_docx(docx_path)
         if docx_text:
             files_dict[filename] = docx_text
 
-    elif filename.endswith(".xls"):
-        excel_extract()
+    elif (filename.endswith(".xlsx") or filename.endswith(".xlsm") or
+          filename.endswith(".xltx") or filename.endswith(".xltm")):
+        excel_path = os.path.join(current_dir, filename)
+        excel_text = extract_excel(excel_path)
+        if excel_text:
+            files_dict[filename] = excel_text
+
+    elif filename.endswith(".csv"):
+        csv_path = os.path.join(current_dir, filename)
+        csv_text = extract_csv(csv_path)
+        if csv_text:
+            files_dict[filename] = csv_text
 
     else:
-        print("Unfortunately this file format is not supported. Please try again with a PDF,"
+        print(f"Unfortunately the file format for {filename} is not supported. Please try again with a PDF,"
               " image (.jpg, .png, .giff etc), Excel or Word file.")
 
 print(files_dict)
