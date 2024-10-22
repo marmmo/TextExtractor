@@ -1,5 +1,3 @@
-from PIL import Image
-import pytesseract
 from pdf2image import convert_from_path
 from pathlib import Path
 import os
@@ -25,13 +23,8 @@ def pdf_convert(pdf_path):
         print(f"Successfully converted {name} to {name[:-4]}.jpg.")
         return pages
 
-    except Exception as e:
-        print(f"Error converting {pdf_path}: {e}")
-
-def text_extract(pages):
-    pass
-
-def combine_text(pages):
-    pass
+    except FileNotFoundError as e:
+        print(f"The file that was passed has not been found. Please check the file exists or "
+              f"that the file path is not broken and try again \n{e}")
 
 

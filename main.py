@@ -7,6 +7,9 @@ from docx import Document
 from openpyxl import load_workbook
 import pandas as pd
 
+_EXCEPTION_MESSAGE_FILE_NOT_FOUND = ("The file that was passed has not been found. Please check the file exists or "
+                                     "that the file path is not broken and try again.")
+
 
 # This function could further be improved to support PDF files with multiple columns and different orientations
 def extract_pdf(pdf_path):
@@ -25,8 +28,8 @@ def extract_pdf(pdf_path):
         print(f"Successfully extracted text from {name}!")
         return text
 
-    except Exception as e:
-        print(f"Error extracting text from {name}: {e}")
+    except FileNotFoundError as e:
+        print(f"{_EXCEPTION_MESSAGE_FILE_NOT_FOUND} \n{e}")
 
 
 # This function could further be improved by pre-processing images in order for the text to be more accurately recognised
@@ -46,10 +49,11 @@ def extract_image(img_path):
         print(f"Successfully extracted text from {name}!")
         return text
 
-    except Exception as e:
-        print(f"Error extracting text from {name}: {e}")
+    except FileNotFoundError as e:
+        print(f"{_EXCEPTION_MESSAGE_FILE_NOT_FOUND} \n{e}")
 
 
+# This function can be further improved to be able to detect better headers, hyperlinks etc
 def extract_docx(word_file_path):
     """This function extracts the text from a Word file (.docx) and
        returns the content in a string.
@@ -69,8 +73,8 @@ def extract_docx(word_file_path):
             print(f"Successfully extracted text from {name}!")
             return text
 
-    except Exception as e:
-        print(f"Error extracting text from {name}: {e}")
+    except FileNotFoundError as e:
+        print(f"{_EXCEPTION_MESSAGE_FILE_NOT_FOUND} \n{e}")
 
 
 def extract_txt(txt_file_path):
@@ -89,8 +93,8 @@ def extract_txt(txt_file_path):
             print(f"Successfully extracted text from {name}!")
             return text
 
-    except Exception as e:
-        print(f"Error extracting text from {name}: {e}")
+    except FileNotFoundError as e:
+        print(f"{_EXCEPTION_MESSAGE_FILE_NOT_FOUND} \n{e}")
 
 
 def extract_excel(excel_path):
@@ -98,7 +102,7 @@ def extract_excel(excel_path):
     as list of lists of strings. Each row is represented by a list of strings that contain the cell values.
 
         Args:
-            pdf_path(str): Path to the PDF file that is to be converted"""
+            excel_path(str): Path to the Excel file that is to be converted"""
 
     name = Path(excel_path).name
 
@@ -116,11 +120,17 @@ def extract_excel(excel_path):
 
         return data
 
-    except Exception as e:
-        print(f"Error extracting text from {name}: {e}")
+    except FileNotFoundError as e:
+        print(f"{_EXCEPTION_MESSAGE_FILE_NOT_FOUND} \n{e}")
 
 
 def extract_csv(csv_path):
+
+    """ This function extracts the text from a CSV file and returns the content as list of lists of strings.
+    Each row is represented by a list of strings that contain the cell values.
+
+        Args:
+            csv_path(str): Path to the CSV file that is to be converted"""
 
     name = Path(csv_path).name
 
@@ -130,62 +140,68 @@ def extract_csv(csv_path):
         data = []
 
         for row in db.iterrows():
-            row_data = [str(cell) if cell is not None else " " for cell in row]
+            row_data = [str(cell) if cell is not None else " " for cell in row][:10]
             data.append(row_data)
 
         return data
 
-    except Exception as e:
-        print(f"Error extracting text from {name}: {e}")
+    except FileNotFoundError as e:
+        print(f"{_EXCEPTION_MESSAGE_FILE_NOT_FOUND} \n{e}")
 
+
+def extract_text_from_files(directory_path):
+    """ This function goes through all the files in a directory, extracts the text from supported file types as string
+     and returns it in a dictionary that had the filename as key and the string content as value.
+
+    Supported file types are: .pdf, .png, .jpg, .giff, .tiff , .bmp, .txt, .docx, .xlsx, .xlsm, .xltx, .xltm, .csv.
+
+           Args:
+               directory_path(str): Path to the directory in which the function should run."""
+
+    content_dict = {}
+
+    try:
+        for filename in os.listdir(directory_path):
+
+            file_path = os.path.join(directory_path, filename)
+
+            if filename.endswith(".pdf"):
+                content_dict[filename] = extract_pdf(file_path)
+
+            elif (filename.endswith(".jpg") or filename.endswith(".png") or filename.endswith(".tiff") or
+                  filename.endswith(".bmp") or  filename.endswith(".gif")):
+                content_dict[filename] = extract_image(file_path)
+
+            elif filename.endswith(".txt"):
+                content_dict[filename] = extract_txt(file_path)
+
+            elif filename.endswith(".docx"):
+                content_dict[filename] = extract_docx(file_path)
+
+            elif (filename.endswith(".xlsx") or filename.endswith(".xlsm") or
+                  filename.endswith(".xltx") or filename.endswith(".xltm")):
+                content_dict[filename] = extract_excel(file_path)
+
+            elif filename.endswith(".csv"):
+                content_dict[filename] = extract_csv(file_path)
+
+            else:
+                print(f"Unfortunately the file format for {filename} is not supported. Please try again with a PDF,"
+                      " image (.jpg, .png, .giff etc), Excel or Word file.")
+
+    except NotADirectoryError:
+        print(f"The input location does not seem to be a directory. Please make sure that the script is "
+              f"inside the directory in which you have the files that need converting and try again."
+              f"\n{e}")
+
+    except FileNotFoundError as e:
+        print(f"The directory that was passed has not been found. Please check the directory "
+              f"path is not broken and try again."
+              f"\n{e}")
+
+    return content_dict
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-
-files_dict = {}
-
-for filename in os.listdir(current_dir):
-
-    if filename.endswith(".pdf"):
-        pdf_path = os.path.join(current_dir, filename)
-        pdf_text = extract_pdf(pdf_path)
-        if pdf_text:
-            files_dict[filename] = pdf_text
-
-    elif (filename.endswith(".jpg") or filename.endswith(".png") or filename.endswith(".tiff") or
-          filename.endswith(".bmp")):
-        image_path = os.path.join(current_dir, filename)
-        image_text = extract_image(image_path)
-        if image_text:
-            files_dict[filename] = image_text
-
-    elif filename.endswith(".txt"):
-        txt_path = os.path.join(current_dir, filename)
-        txt_text = extract_txt(txt_path)
-        if txt_text:
-            files_dict[filename] = txt_text
-
-    elif filename.endswith(".docx"):
-        docx_path = os.path.join(current_dir, filename)
-        docx_text = extract_docx(docx_path)
-        if docx_text:
-            files_dict[filename] = docx_text
-
-    elif (filename.endswith(".xlsx") or filename.endswith(".xlsm") or
-          filename.endswith(".xltx") or filename.endswith(".xltm")):
-        excel_path = os.path.join(current_dir, filename)
-        excel_text = extract_excel(excel_path)
-        if excel_text:
-            files_dict[filename] = excel_text
-
-    elif filename.endswith(".csv"):
-        csv_path = os.path.join(current_dir, filename)
-        csv_text = extract_csv(csv_path)
-        if csv_text:
-            files_dict[filename] = csv_text
-
-    else:
-        print(f"Unfortunately the file format for {filename} is not supported. Please try again with a PDF,"
-              " image (.jpg, .png, .giff etc), Excel or Word file.")
-
+files_dict = extract_text_from_files(current_dir)
 print(files_dict)
