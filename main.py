@@ -125,7 +125,6 @@ def extract_excel(excel_path):
 
 
 def extract_csv(csv_path):
-
     """ This function extracts the text from a CSV file and returns the content as list of lists of strings.
     Each row is represented by a list of strings that contain the cell values.
 
@@ -168,8 +167,8 @@ def extract_text_from_files(directory_path):
             if filename.endswith(".pdf"):
                 content_dict[filename] = extract_pdf(file_path)
 
-            elif (filename.endswith(".jpg") or filename.endswith(".png") or filename.endswith(".tiff") or
-                  filename.endswith(".bmp") or  filename.endswith(".gif")):
+            elif (filename.endswith(".jpg") or filename.endswith(".jpeg") or filename.endswith(".png") or filename.endswith(".tiff") or
+                  filename.endswith(".bmp") or filename.endswith(".gif")):
                 content_dict[filename] = extract_image(file_path)
 
             elif filename.endswith(".txt"):
@@ -202,6 +201,7 @@ def extract_text_from_files(directory_path):
     return content_dict
 
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-files_dict = extract_text_from_files(current_dir)
-print(files_dict)
+if __name__ == "__main__":
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    files_dict = extract_text_from_files(current_dir)
+    print(files_dict)
